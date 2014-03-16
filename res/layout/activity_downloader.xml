@@ -6,15 +6,11 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context=".FileDownloaderActivity" >
+    tools:context=".DownloadTask" >
 
-    <Button
-        android:id="@+id/btnDownload"
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:onClick="onDownload"
-        android:text="@string/download_file" />
+        android:text="@string/hello_world" />
 
 </RelativeLayout>

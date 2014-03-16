@@ -1,8 +1,9 @@
 package com.mgoenka.filedownloader;
 
-import android.os.Bundle;
 import android.app.Activity;
-import android.view.Menu;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
 
 public class FileDownloaderActivity extends Activity {
 
@@ -12,11 +13,12 @@ public class FileDownloaderActivity extends Activity {
 		setContentView(R.layout.activity_file_downloader);
 	}
 
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.file_downloader, menu);
-		return true;
-	}
+	public void onDownload(View v) {
+		// instantiate it within the onCreate method
+		Log.i("Edx: ", "Download Clicked");
 
+		// execute this when the downloader must be fired
+		final DownloadTask downloadTask = new DownloadTask(FileDownloaderActivity.this);
+		downloadTask.execute("http://web.mit.edu/bentley/www/papers/a30-bentley.pdf");
+	}
 }
