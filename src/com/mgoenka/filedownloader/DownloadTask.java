@@ -1,7 +1,8 @@
 package com.mgoenka.filedownloader;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -14,8 +15,6 @@ import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-
-import org.apache.http.util.ByteArrayBuffer;
 
 import android.content.Context;
 import android.os.AsyncTask;
@@ -30,7 +29,7 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
     private Context context;
     private PowerManager.WakeLock mWakeLock;
     long startTime = 0;
-    long fileLength;
+    int contentLength;
     
     String fileName = "/sdcard/Network";
 
@@ -50,35 +49,22 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
         HttpURLConnection connection = null;
         
         try {
-        	URL url = new URL(sUrl[0]);
-            URLConnection ucon = url.openConnection();
-            InputStream is = ucon.getInputStream();
-            BufferedInputStream bis = new BufferedInputStream(is);
-            fileLength = ucon.getContentLength();
+        	File dest_file = new File("/sdcard/File.pdf");
+            URL u = new URL(sUrl[0]);
+            URLConnection conn = u.openConnection();
+            contentLength = conn.getContentLength();
 
-            ByteArrayBuffer baf = new ByteArrayBuffer(4096);
-            int current = 0;
-            long total = 0;
+            DataInputStream stream = new DataInputStream(u.openStream());
             
             appendLog("Download started in " + (System.currentTimeMillis() - startTime) + " miliseconds");
             
-            while ((current = bis.read()) != -1) {
-               baf.append((byte) current);
-               total += current;
-                try {
-                    Thread.sleep(5000);
-                    appendLog("Download progress - " + (total * 100 / fileLength) + "%, Throughput: " +
-                    		current/5 + " bytes/second");
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            /* Convert the Bytes read to a String. */
-            FileOutputStream fos = new FileOutputStream(fileName);
-            fos.write(baf.toByteArray());
+            byte[] buffer = new byte[contentLength];
+            stream.readFully(buffer);
+            stream.close();
+            DataOutputStream fos = new DataOutputStream(new FileOutputStream(dest_file));
+            fos.write(buffer);
+            fos.flush();
             fos.close();
-
 	    } catch (Exception e) {
 	        return e.toString();
 	    } finally {
@@ -110,15 +96,16 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
     @Override
     protected void onPostExecute(String result) {
         mWakeLock.release();
-        long totalTime = (System.currentTimeMillis() - startTime)/1000;
+        long totalTime = System.currentTimeMillis() - startTime;
+        long throughput = contentLength / (totalTime / 1000);
         
         if (result != null)
             Toast.makeText(context,"Download error: "+result, Toast.LENGTH_LONG).show();
         else
             Toast.makeText(context,"File downloaded", Toast.LENGTH_SHORT).show();
 
-        appendLog("Download completed in " + totalTime + " seconds, Throughput: " +
-        		fileLength/totalTime + " bytes/second");
+        appendLog("Download completed in " + totalTime + " miliseconds");
+        appendLog("Average throughput is " + throughput + " bytes/second");
     }
     
     public void appendLog(String text) {

@@ -16,7 +16,7 @@ public class FileDownloaderActivity extends Activity {
 		// execute this when the downloader must be fired
 		final DownloadTask downloadTask = new DownloadTask(FileDownloaderActivity.this);
 
-		// downloadTask.execute("http://web.mit.edu/bentley/www/papers/a30-bentley.pdf");
-		downloadTask.execute("http://www.mohitgoenka.com/Resume.pdf");
+		downloadTask.execute("http://web.mit.edu/bentley/www/papers/a30-bentley.pdf");
+		// downloadTask.execute("http://www.mohitgoenka.com/Resume.pdf");
 	}
 }
