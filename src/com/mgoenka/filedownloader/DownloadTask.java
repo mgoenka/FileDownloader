@@ -53,13 +53,31 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
             URL u = new URL(sUrl[0]);
             URLConnection conn = u.openConnection();
             contentLength = conn.getContentLength();
+            
+            long totalRead = 0;
 
             DataInputStream stream = new DataInputStream(u.openStream());
             
-            appendLog("Download started in " + (System.currentTimeMillis() - startTime) + " miliseconds");
+            long lastLogTime = System.currentTimeMillis();
+            
+            appendLog("Download started in " + (lastLogTime - startTime) + " miliseconds");
             
             byte[] buffer = new byte[contentLength];
-            stream.readFully(buffer);
+            
+            while (totalRead < contentLength)
+            {
+                int bytesRead = stream.read(buffer);
+                if (bytesRead < 0)
+                    throw new IOException("Data stream ended prematurely");
+                totalRead += bytesRead;
+                int progress = (int)((totalRead * 100) / contentLength);
+                
+                if (System.currentTimeMillis() > (lastLogTime + 5000)) {
+                	appendLog("Download progress: " + progress + "%, Throughput: " + totalRead/5 + " bytes/second");
+                	lastLogTime = System.currentTimeMillis();
+                }
+            }
+            
             stream.close();
             DataOutputStream fos = new DataOutputStream(new FileOutputStream(dest_file));
             fos.write(buffer);
