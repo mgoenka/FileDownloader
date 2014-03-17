@@ -2,7 +2,6 @@ package com.mgoenka.filedownloader;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 
 public class FileDownloaderActivity extends Activity {
@@ -14,11 +13,10 @@ public class FileDownloaderActivity extends Activity {
 	}
 
 	public void onDownload(View v) {
-		// instantiate it within the onCreate method
-		Log.i("Edx: ", "Download Clicked");
-
 		// execute this when the downloader must be fired
 		final DownloadTask downloadTask = new DownloadTask(FileDownloaderActivity.this);
-		downloadTask.execute("http://web.mit.edu/bentley/www/papers/a30-bentley.pdf");
+
+		// downloadTask.execute("http://web.mit.edu/bentley/www/papers/a30-bentley.pdf");
+		downloadTask.execute("http://www.mohitgoenka.com/Resume.pdf");
 	}
 }

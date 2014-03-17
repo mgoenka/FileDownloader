@@ -1,11 +1,17 @@
 package com.mgoenka.filedownloader;
 
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import android.content.Context;
 import android.os.AsyncTask;
@@ -21,9 +27,14 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
     private PowerManager.WakeLock mWakeLock;
     long startTime = 0;
     long endTime = 0;
+    
+    String fileName = "/sdcard/Network";
 
     public DownloadTask(Context context) {
         this.context = context;
+
+        startTime = System.currentTimeMillis();
+		appendLog("Download Clicked");
     }
 
     @Override
@@ -31,6 +42,8 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
         InputStream input = null;
         OutputStream output = null;
         HttpURLConnection connection = null;
+        
+        fileName += 1 + (int)(Math.random() * 1000)  + ".txt";
      
         try {
             URL url = new URL(sUrl[0]);
@@ -52,27 +65,28 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
 	        input = connection.getInputStream();
 	        output = new FileOutputStream("/sdcard/edx.pdf");
 	
-	        byte data[] = new byte[4096];
+	        byte data[] = new byte[input.available()];
 	        long total = 0;
 	        int count;
+	        
+	        appendLog("Download started in " + (System.currentTimeMillis() - startTime) + " miliseconds");
+	        
             while ((count = input.read(data)) != -1) {
-	            // allow canceling with back button
-	            if (isCancelled()) {
-	                input.close();
-	                return null;
-	            }
-	            total += count;
-	      
-	            // publishing the progress....
-	            if (total < fileLength) {
-	                try {
-	                    Thread.sleep(5000);
-	                    publishProgress((int) (total * 100 / fileLength));
-	                } catch (InterruptedException e) {
-	                    e.printStackTrace();
-	                }
-	            }
-	            output.write(data, 0, count);
+            	if (data != null) {
+		            total += count;
+		      
+		            // publishing the progress....
+		            if (total < fileLength) {
+		                try {
+		                    Thread.sleep(5000);
+		                    appendLog("Download progress - " + (total * 100 / fileLength) + "%, Throughput: " +
+		                    		count/5 + " bytes/second");
+		                } catch (InterruptedException e) {
+		                    e.printStackTrace();
+		                }
+		            }
+		            output.write(data, 0, count);
+            	}
 	        }
 	    } catch (Exception e) {
 	        return e.toString();
@@ -100,14 +114,6 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, getClass().getName());
         mWakeLock.acquire();
-        startTime = System.currentTimeMillis();
-    }
-
-    @Override
-    protected void onProgressUpdate(Integer... progress) {
-        super.onProgressUpdate(progress);
-        // if we get here, length is known, now set indeterminate to false
-        Log.i("Edx", "Download progress report: " + progress[0]);
     }
 
     @Override
@@ -118,5 +124,38 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
             Toast.makeText(context,"Download error: "+result, Toast.LENGTH_LONG).show();
         else
             Toast.makeText(context,"File downloaded", Toast.LENGTH_SHORT).show();
+
+        appendLog("Download completed in " + (endTime - startTime) + " miliseconds");
     }
+    
+    public void appendLog(String text) {
+        Log.i("Edx", text);
+
+ 	    File logFile = new File(fileName);
+ 	    String time = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss",
+				Locale.getDefault()).format(new Date());
+ 	    
+ 	    text = "Time: " + time + ", Message: " + text;
+ 	   
+ 	    if (!logFile.exists()) {
+ 	        try {
+ 	            logFile.createNewFile();
+ 	        } 
+ 	        catch (IOException e) {
+ 	            // TODO Auto-generated catch block
+ 	            e.printStackTrace();
+ 	        }
+ 	    }
+ 	    try {
+ 	        //BufferedWriter for performance, true to set append to file flag
+ 	        BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true)); 
+ 	        buf.append(text);
+ 	        buf.newLine();
+ 	        buf.close();
+ 	    }
+ 	    catch (IOException e) {
+ 	        // TODO Auto-generated catch block
+ 	        e.printStackTrace();
+ 	    }
+ 	}
 }
