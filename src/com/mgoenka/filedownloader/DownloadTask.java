@@ -59,22 +59,26 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
             DataInputStream stream = new DataInputStream(u.openStream());
             
             long lastLogTime = System.currentTimeMillis();
+            int prevProgress = -1;
             
-            appendLog("Download started in " + (lastLogTime - startTime) + " miliseconds");
+            appendLog("Download started in " + (lastLogTime - startTime) + " ms");
             
             byte[] buffer = new byte[contentLength];
             
             while (totalRead < contentLength)
             {
                 int bytesRead = stream.read(buffer);
-                if (bytesRead < 0)
-                    throw new IOException("Data stream ended prematurely");
+                if (bytesRead < 0) {
+                    appendLog("Data not received");
+                    continue;
+                }
                 totalRead += bytesRead;
                 int progress = (int)((totalRead * 100) / contentLength);
                 
-                if (System.currentTimeMillis() > (lastLogTime + 5000)) {
+                if (System.currentTimeMillis() > (lastLogTime + 5000) && progress > prevProgress) {
                 	appendLog("Download progress: " + progress + "%, Throughput: " + totalRead/5 + " bytes/second");
                 	lastLogTime = System.currentTimeMillis();
+                	prevProgress = progress;
                 }
             }
             
@@ -122,7 +126,7 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
         else
             Toast.makeText(context,"File downloaded", Toast.LENGTH_SHORT).show();
 
-        appendLog("Download completed in " + totalTime + " miliseconds");
+        appendLog("Download completed in " + totalTime + " ms");
         appendLog("Average throughput is " + throughput + " bytes/second");
     }
     
