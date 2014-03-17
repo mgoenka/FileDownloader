@@ -1,5 +1,6 @@
 package com.mgoenka.filedownloader;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -9,9 +10,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+
+import org.apache.http.util.ByteArrayBuffer;
 
 import android.content.Context;
 import android.os.AsyncTask;
@@ -26,7 +30,7 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
     private Context context;
     private PowerManager.WakeLock mWakeLock;
     long startTime = 0;
-    long endTime = 0;
+    long fileLength;
     
     String fileName = "/sdcard/Network";
 
@@ -34,6 +38,8 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
         this.context = context;
 
         startTime = System.currentTimeMillis();
+        
+        fileName += 1 + (int)(Math.random() * 1000)  + ".txt";
 		appendLog("Download Clicked");
     }
 
@@ -43,51 +49,36 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
         OutputStream output = null;
         HttpURLConnection connection = null;
         
-        fileName += 1 + (int)(Math.random() * 1000)  + ".txt";
-     
         try {
-            URL url = new URL(sUrl[0]);
-            connection = (HttpURLConnection) url.openConnection();
-            connection.connect();
+        	URL url = new URL(sUrl[0]);
+            URLConnection ucon = url.openConnection();
+            InputStream is = ucon.getInputStream();
+            BufferedInputStream bis = new BufferedInputStream(is);
+            fileLength = ucon.getContentLength();
 
-            // expect HTTP 200 OK, so we don't mistakenly save error report
-	        // instead of the file
-	        if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-	            return "Server returned HTTP " + connection.getResponseCode()
-	                    + " " + connection.getResponseMessage();
-	        }
-	
-	        // this will be useful to display download percentage
-	        // might be -1: server did not report the length
-	        int fileLength = connection.getContentLength();
-	
-	        // download the file
-	        input = connection.getInputStream();
-	        output = new FileOutputStream("/sdcard/edx.pdf");
-	
-	        byte data[] = new byte[input.available()];
-	        long total = 0;
-	        int count;
-	        
-	        appendLog("Download started in " + (System.currentTimeMillis() - startTime) + " miliseconds");
-	        
-            while ((count = input.read(data)) != -1) {
-            	if (data != null) {
-		            total += count;
-		      
-		            // publishing the progress....
-		            if (total < fileLength) {
-		                try {
-		                    Thread.sleep(5000);
-		                    appendLog("Download progress - " + (total * 100 / fileLength) + "%, Throughput: " +
-		                    		count/5 + " bytes/second");
-		                } catch (InterruptedException e) {
-		                    e.printStackTrace();
-		                }
-		            }
-		            output.write(data, 0, count);
-            	}
-	        }
+            ByteArrayBuffer baf = new ByteArrayBuffer(4096);
+            int current = 0;
+            long total = 0;
+            
+            appendLog("Download started in " + (System.currentTimeMillis() - startTime) + " miliseconds");
+            
+            while ((current = bis.read()) != -1) {
+               baf.append((byte) current);
+               total += current;
+                try {
+                    Thread.sleep(5000);
+                    appendLog("Download progress - " + (total * 100 / fileLength) + "%, Throughput: " +
+                    		current/5 + " bytes/second");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            /* Convert the Bytes read to a String. */
+            FileOutputStream fos = new FileOutputStream(fileName);
+            fos.write(baf.toByteArray());
+            fos.close();
+
 	    } catch (Exception e) {
 	        return e.toString();
 	    } finally {
@@ -119,13 +110,15 @@ class DownloadTask extends AsyncTask<String, Integer, String> {
     @Override
     protected void onPostExecute(String result) {
         mWakeLock.release();
-        endTime = System.currentTimeMillis();
+        long totalTime = (System.currentTimeMillis() - startTime)/1000;
+        
         if (result != null)
             Toast.makeText(context,"Download error: "+result, Toast.LENGTH_LONG).show();
         else
             Toast.makeText(context,"File downloaded", Toast.LENGTH_SHORT).show();
 
-        appendLog("Download completed in " + (endTime - startTime) + " miliseconds");
+        appendLog("Download completed in " + totalTime + " seconds, Throughput: " +
+        		fileLength/totalTime + " bytes/second");
     }
     
     public void appendLog(String text) {
